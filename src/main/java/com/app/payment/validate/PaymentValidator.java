@@ -1,4 +1,4 @@
-package com.app.payment;
+package com.app.payment.validate;
 
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-public class Validator {
+public class PaymentValidator {
     private static final Set<String> ISO_COUNTRY_CODES = Set.of(Locale.getISOCountries())
             .stream()
             .map(code -> new Locale("", code).getISO3Country())

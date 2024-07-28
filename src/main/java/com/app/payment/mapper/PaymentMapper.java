@@ -34,6 +34,8 @@ public class PaymentMapper {
         fraudCheckRequest.setPayeeName(incomingDto.getPayeeName());
         fraudCheckRequest.setPayerBank(incomingDto.getPayerBank());
         fraudCheckRequest.setPayerName(incomingDto.getPayerName());
+        fraudCheckRequest.setPayerCountryCode(incomingDto.getPayerCountryCode());
+        fraudCheckRequest.setPayeeCountryCode(incomingDto.getPayeeCountryCode());
         return fraudCheckRequest;
     }
 

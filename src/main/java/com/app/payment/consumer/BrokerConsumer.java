@@ -15,7 +15,7 @@ public class BrokerConsumer {
         this.brokerService = brokerService;
     }
 
-    @JmsListener(destination = "FraudDetectionResponseQueue")
+    @JmsListener(destination = "FraudCheckResponseQueue")
     public void receiveResponse(String xmlResponse) {
         logger.info("FraudDetectionResponse Received");
         brokerService.processFraudCheckResponse(xmlResponse);

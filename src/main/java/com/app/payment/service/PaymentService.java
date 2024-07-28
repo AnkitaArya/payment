@@ -1,6 +1,6 @@
 package com.app.payment.service;
 
-import com.app.payment.Validator;
+import com.app.payment.validate.PaymentValidator;
 import com.app.payment.entity.Payment;
 import com.app.payment.mapper.PaymentMapper;
 import com.app.payment.model.FraudCheckResponse;
@@ -23,13 +23,13 @@ import java.util.Optional;
 public class PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
-    private final Validator validator;
+    private final PaymentValidator paymentValidator;
     private PaymentRepository paymentRepository;
     private HttpClient httpClient;
     private ObjectMapper objectMapper;
 
-    public PaymentService(Validator validator, PaymentRepository paymentRepository, HttpClient httpClient, ObjectMapper objectMapper) {
-        this.validator = validator;
+    public PaymentService(PaymentValidator paymentValidator, PaymentRepository paymentRepository, HttpClient httpClient, ObjectMapper objectMapper) {
+        this.paymentValidator = paymentValidator;
         this.paymentRepository = paymentRepository;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
@@ -72,15 +72,15 @@ public class PaymentService {
     }
 
     private Boolean validatePayment(PaymentRequestDTO paymentDto) {
-        if (!validator.isValidCountryCode(paymentDto.getPayerCountryCode())) {
+        if (!paymentValidator.isValidCountryCode(paymentDto.getPayerCountryCode())) {
             return false;
         }
 
-        if (!validator.isValidCountryCode(paymentDto.getPayeeCountryCode())) {
+        if (!paymentValidator.isValidCountryCode(paymentDto.getPayeeCountryCode())) {
             return false;
         }
 
-        if (!validator.isValidCurrencyCode(paymentDto.getCurrency())) {
+        if (!paymentValidator.isValidCurrencyCode(paymentDto.getCurrency())) {
             return false;
         }
 
@@ -90,7 +90,6 @@ public class PaymentService {
 
 
     private HttpResponse<String> sendToBrokerService(PaymentRequestDTO paymentRequestDTO) throws IOException, InterruptedException {
-        //String url = hostname+port+endpoint;
         String url = "http://localhost:9095/api/v1/broker";
         String requestBody = objectMapper.writeValueAsString(paymentRequestDTO);
         HttpRequest request = HttpRequest.newBuilder()
