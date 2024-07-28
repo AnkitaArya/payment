@@ -1,5 +1,7 @@
 package com.app.payment.service;
 
+import com.app.payment.exception.PaymentException;
+import com.app.payment.exception.ValidationException;
 import com.app.payment.model.FraudCheckRequest;
 import com.app.payment.producer.PaymentProducer;
 import com.app.payment.validate.PaymentValidator;
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,9 +48,8 @@ public class PaymentService {
 
     public String processPayment(PaymentRequestDTO requestDto) throws IOException, InterruptedException {
 
-
         if (!validatePayment(requestDto)) {
-            return "Invalid payment details";
+            throw new ValidationException("Validation failed for the input values", HttpStatus.BAD_REQUEST.value());
         } else {
             Payment payment = PaymentMapper.convertToEntity(requestDto);
             paymentRepository.save(payment);
@@ -57,7 +59,7 @@ public class PaymentService {
                 logger.info("Payment submitted for fraud check");
             } else {
                 logger.error("Payment failed while submitted for fraud check");
-                //Todo throw error
+                throw new PaymentException("Payment failed while submitted for fraud check", HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
             return requestDto.getTransactionId();
         }
@@ -65,7 +67,7 @@ public class PaymentService {
     }
     public String processPaymentV2(PaymentRequestDTO requestDto){
         if (!validatePayment(requestDto)) {
-            return "Invalid payment details";
+            throw new ValidationException("Validation failed for the input values", HttpStatus.BAD_REQUEST.value());
         } else {
             Payment payment = PaymentMapper.convertToEntity(requestDto);
             try {
@@ -75,7 +77,7 @@ public class PaymentService {
                 return requestDto.getTransactionId();
             }catch (Exception ex){
                 logger.error("Exception while sending request to broker queue");
-                return "Payment failed while sending request to broker queue";
+                throw new PaymentException("Payment failed while submitted for fraud check", HttpStatus.INTERNAL_SERVER_ERROR.value());
             }
         }
     }
@@ -84,16 +86,20 @@ public class PaymentService {
         return paymentRepository.findByTransactionId(transactionId).get();
     }
 
-    public Optional<Payment> updatePaymentStatus(FraudCheckResponse response) {
+    public Payment updatePaymentStatus(FraudCheckResponse response) {
         logger.info("Updating payment status for transactionId: {}", response.getTransactionId());
         Optional<Payment> paymentOptional = paymentRepository.findByTransactionId(response.getTransactionId());
         if (paymentOptional.isPresent()) {
             Payment payment = paymentOptional.get();
             payment.setStatus(response.getStatus());
             paymentRepository.save(payment);
-            return Optional.of(payment);
+            return payment;
         }
-        return Optional.empty();
+        else {
+            logger.error("No payment found for transaction Id {}", response.getTransactionId());
+            throw new PaymentException("No payment found for transaction Id {} " + response.getTransactionId(), HttpStatus.NOT_FOUND.value());
+        }
+
     }
 
     private Boolean validatePayment(PaymentRequestDTO paymentDto) {

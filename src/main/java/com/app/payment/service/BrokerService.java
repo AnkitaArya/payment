@@ -1,5 +1,6 @@
 package com.app.payment.service;
 
+import com.app.payment.exception.PaymentException;
 import com.app.payment.model.FraudCheckRequest;
 import com.app.payment.model.FraudCheckResponse;
 import com.app.payment.producer.BrokerProducer;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -58,7 +60,7 @@ public class BrokerService {
             logger.info("Response received for transaction id: {} ", response.getTransactionId());
         } catch (Exception e) {
             logger.error("Error processing fraud check response: " + e.getMessage());
-            e.printStackTrace();
+            throw new PaymentException("Error processing fraud check response: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 

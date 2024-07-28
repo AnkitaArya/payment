@@ -49,12 +49,9 @@ public class PaymentControllerV1 {
     @PutMapping
     public ResponseEntity<Payment> updatePaymentStatus(@RequestBody FraudCheckResponse response) {
         logger.info("Received request to update payment status for id: {}", response.getTransactionId());
-        Optional<Payment> updatedPayment = paymentService.updatePaymentStatus(response);
-        if (updatedPayment.isPresent()) {
-            return ResponseEntity.ok(updatedPayment.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        Payment updatedPayment = paymentService.updatePaymentStatus(response);
+        return ResponseEntity.ok(updatedPayment);
+
     }
 
 
