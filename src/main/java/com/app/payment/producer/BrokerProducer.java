@@ -1,27 +1,31 @@
 package com.app.payment.producer;
 
+import com.app.payment.model.FraudCheckRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BrokerProducer {
-    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(BrokerProducer.class);
     private JmsTemplate jmsTemplate;
+    private XmlMapper xmlMapper;
 
-    private final XmlMapper xmlMapper = new XmlMapper();
+    public BrokerProducer(JmsTemplate jmsTemplate, XmlMapper xmlMapper) {
+        this.jmsTemplate = jmsTemplate;
+        this.xmlMapper = xmlMapper;
+    }
 
-    public void convertAndSend(Object object, String queueName) {
+    public void convertAndSend(FraudCheckRequest object, String queueName) {
         try {
-            // Convert object to XML string
+            xmlMapper.registerModule(new JavaTimeModule());
             String xmlMessage = xmlMapper.writeValueAsString(object);
-
-            // Send the message
             jmsTemplate.convertAndSend(queueName, xmlMessage);
-
-            System.out.println("BrokerProducer: Sent XML message: " + xmlMessage);
+            logger.info("published message {} to queue {}", xmlMessage, queueName);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

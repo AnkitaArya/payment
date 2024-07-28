@@ -12,13 +12,13 @@ import org.springframework.jms.core.JmsTemplate;
 
 @Configuration
 @EnableJms
-public class Configure {
+public class JmsConfig {
     @Value("${spring.activemq.broker-url}")
-    String BROKER_URL;
+    private String BROKER_URL;
     @Value("${spring.activemq.user}")
-    String BROKER_USERNAME;
+    private String BROKER_USERNAME;
     @Value("${spring.activemq.password}")
-    String BROKER_PASSWORD;
+    private String BROKER_PASSWORD;
 
     @Bean
     public ActiveMQConnectionFactory connectionFactory(){
@@ -46,5 +46,4 @@ public class Configure {
         factory.setConcurrency("1-1");
         return factory;
     }
-
 }

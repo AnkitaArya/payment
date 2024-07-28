@@ -2,9 +2,9 @@ package com.app.payment.controller;
 
 
 import com.app.payment.model.PaymentRequestDTO;
-import com.app.payment.model.PaymentResponseDTO;
 import com.app.payment.service.BrokerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,12 +17,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping(value = "/api/v1/broker", produces = {APPLICATION_JSON_VALUE})
 public class BrokerController {
-
-    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(BrokerController.class);
     private BrokerService brokerService;
+    public BrokerController(BrokerService brokerService) {
+        this.brokerService = brokerService;
+    }
 
-    @PostMapping(value = "/process/request/data", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<String> createPayment(@RequestBody PaymentRequestDTO requestDto) {
+    @PostMapping(consumes = "application/json", produces = "application/json")
+    public ResponseEntity<String> processPayment(@RequestBody PaymentRequestDTO requestDto) {
+        logger.info("Request received to process payment with id : {} ", requestDto.getTransactionId());
         try {
             brokerService.processPayment(requestDto);
             return new ResponseEntity<>("Fraud check request processed successfully", HttpStatus.OK);

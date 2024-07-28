@@ -1,16 +1,15 @@
 package com.app.payment.service;
 
 import com.app.payment.Validator;
-import com.app.payment.model.PaymentRequestDTO;
-import com.app.payment.model.PaymentResponseDTO;
 import com.app.payment.entity.Payment;
+import com.app.payment.mapper.PaymentMapper;
+import com.app.payment.model.FraudCheckResponse;
+import com.app.payment.model.PaymentRequestDTO;
 import com.app.payment.repository.PaymentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.net.URI;
@@ -26,11 +25,14 @@ public class PaymentService {
 
     private final Validator validator;
     private PaymentRepository paymentRepository;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private HttpClient httpClient;
+    private ObjectMapper objectMapper;
 
-    public PaymentService(Validator validator, PaymentRepository paymentRepository) {
+    public PaymentService(Validator validator, PaymentRepository paymentRepository, HttpClient httpClient, ObjectMapper objectMapper) {
         this.validator = validator;
         this.paymentRepository = paymentRepository;
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
     }
 
     public String processPayment(PaymentRequestDTO requestDto) throws IOException, InterruptedException {
@@ -39,34 +41,25 @@ public class PaymentService {
         if (!validatePayment(requestDto)) {
             return "Invalid payment details";
         } else {
-            Payment payment = convertToEntity(requestDto);
+            Payment payment = PaymentMapper.convertToEntity(requestDto);
+            paymentRepository.save(payment);
             HttpResponse<String> response = sendToBrokerService(requestDto);
-
             if (response.statusCode() == 200) {
                 logger.info("Payment submitted for fraud check");
-                payment.setStatus("Submitted for fraud check");
-                paymentRepository.save(payment);
             } else {
-                logger.error("Payment submission for fraud check failed");
-                payment.setStatus("Failed");
-                paymentRepository.save(payment);
+                logger.error("Payment failed while submitted for fraud check");
+                //Todo throw error
             }
             return requestDto.getTransactionId();
         }
 
     }
 
-    public Payment getPaymentStatus(@RequestParam String transactionId) {
-
+    public Payment getPaymentStatus(String transactionId) {
         return paymentRepository.findByTransactionId(transactionId).get();
     }
 
-
-    public Payment getPayment(String paymentId) {
-        return paymentRepository.findByTransactionId(paymentId).get();
-    }
-
-    public Optional<Payment> updatePaymentStatus(PaymentResponseDTO response) {
+    public Optional<Payment> updatePaymentStatus(FraudCheckResponse response) {
         logger.info("Updating payment status for transactionId: {}", response.getTransactionId());
         Optional<Payment> paymentOptional = paymentRepository.findByTransactionId(response.getTransactionId());
         if (paymentOptional.isPresent()) {
@@ -94,25 +87,12 @@ public class PaymentService {
         return true;
     }
 
-    private Payment convertToEntity(PaymentRequestDTO paymentDto) {
-        Payment paymentEntity = new Payment();
-        paymentEntity.setTransactionId(paymentDto.getTransactionId());
-        paymentEntity.setPayerName(paymentDto.getPayerName());
-        paymentEntity.setAmount(Long.valueOf(paymentDto.getAmount()));
-        paymentEntity.setCurrency(paymentDto.getCurrency());
-        paymentEntity.setPayerCountryCode(paymentDto.getPayerCountryCode());
-        paymentEntity.setPayeeCountryCode(paymentDto.getPayeeCountryCode());
-        paymentEntity.setPayerBank(paymentDto.getPayerBank());
-        paymentEntity.setPayeeBank(paymentDto.getPayeeBank());
-        paymentEntity.setPaymentInstruction(paymentDto.getPaymentInstruction());
-        return paymentEntity;
-    }
+
 
     private HttpResponse<String> sendToBrokerService(PaymentRequestDTO paymentRequestDTO) throws IOException, InterruptedException {
-        String url = "http://localhost:9095/api/v1/broker/process/request/data";
-
-        ObjectMapper mapper = new JsonMapper();
-        String requestBody = mapper.writeValueAsString(paymentRequestDTO);
+        //String url = hostname+port+endpoint;
+        String url = "http://localhost:9095/api/v1/broker";
+        String requestBody = objectMapper.writeValueAsString(paymentRequestDTO);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")

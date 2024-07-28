@@ -2,11 +2,11 @@ package com.app.payment.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.antlr.v4.runtime.misc.NotNull;
+import javax.validation.constraints.NotNull;
 
 @Getter
 @Setter
-public class PaymentResponseDTO {
+public class FraudCheckResponse {
     @NotNull
     private String transactionId;
     @NotNull

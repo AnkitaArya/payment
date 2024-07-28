@@ -1,13 +1,11 @@
 package com.app.payment.controller;
 
-import com.app.payment.model.PaymentRequestDTO;
-import com.app.payment.model.PaymentResponseDTO;
-
 import com.app.payment.entity.Payment;
+import com.app.payment.model.FraudCheckResponse;
+import com.app.payment.model.PaymentRequestDTO;
 import com.app.payment.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,21 +16,20 @@ import java.util.Optional;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
-@RequestMapping(value = "/api/v1/payment/engine", produces = { APPLICATION_JSON_VALUE })
+@RequestMapping(value = "/api/v1/payment", produces = {APPLICATION_JSON_VALUE})
 public class PaymentController {
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
-    @Autowired
+
     private PaymentService paymentService;
 
-    //crud operation and why post?
-    @PostMapping(value = "/create", consumes = "application/json", produces = "application/json")
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
-    /**
-     * TO _DO: even though annotated, it does not return response as 201, spring default 200 is returned.
-     */
-    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(consumes = "application/json", produces = "application/json")
     public ResponseEntity<String> createPayment(@RequestBody PaymentRequestDTO requestDto) throws IOException, InterruptedException {
-        String  response = paymentService.processPayment(requestDto);
+        logger.info("Request received to create payment with id : {} ", requestDto.getTransactionId());
+        String response = paymentService.processPayment(requestDto);
         if (response.startsWith("Invalid")) {
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         } else if (response.contains("failed")) {
@@ -42,15 +39,15 @@ public class PaymentController {
         }
     }
 
-    @GetMapping(value ="/{paymentId}", produces = "application/json")
-    public ResponseEntity<Payment> fetchPayment(@PathVariable String paymentId){
-        logger.info("Request recieved to get status of payment with id : {} ", paymentId);
-        Payment result = paymentService.getPayment(paymentId);
+    @GetMapping(value = "/{paymentId}", produces = "application/json")
+    public ResponseEntity<Payment> fetchPayment(@PathVariable String paymentId) {
+        logger.info("Request received to fetch status of payment with id : {} ", paymentId);
+        Payment result = paymentService.getPaymentStatus(paymentId);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @PutMapping("/status")
-    public ResponseEntity<Payment> updatePaymentStatus(@RequestBody PaymentResponseDTO response) {
+    @PutMapping
+    public ResponseEntity<Payment> updatePaymentStatus(@RequestBody FraudCheckResponse response) {
         logger.info("Received request to update payment status for id: {}", response.getTransactionId());
         Optional<Payment> updatedPayment = paymentService.updatePaymentStatus(response);
         if (updatedPayment.isPresent()) {

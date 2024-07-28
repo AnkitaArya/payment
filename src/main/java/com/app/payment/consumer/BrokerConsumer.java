@@ -4,20 +4,14 @@ package com.app.payment.consumer;
 import com.app.payment.service.BrokerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BrokerConsumer {
     private static final Logger logger = LoggerFactory.getLogger(BrokerConsumer.class);
-
-
     private final BrokerService brokerService;
-
-
-    @Autowired
-    private BrokerConsumer(BrokerService brokerService) {
+    public BrokerConsumer(BrokerService brokerService) {
         this.brokerService = brokerService;
     }
 
