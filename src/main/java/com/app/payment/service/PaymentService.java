@@ -14,15 +14,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import javax.validation.ConstraintViolationException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Service
@@ -51,16 +54,23 @@ public class PaymentService {
         if (!validatePayment(requestDto)) {
             throw new ValidationException("Validation failed for the input values", HttpStatus.BAD_REQUEST.value());
         } else {
-            Payment payment = PaymentMapper.convertToEntity(requestDto);
-            paymentRepository.save(payment);
-            FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto, "api");
-            HttpResponse<String> response = sendToBrokerService(fraudCheckRequest);
-            if (response.statusCode() == 200) {
-                logger.info("Payment submitted for fraud check");
-            } else {
-                logger.error("Payment failed while submitted for fraud check");
-                throw new PaymentException("Payment failed while submitted for fraud check", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            try{
+                Payment payment = PaymentMapper.convertToEntity(requestDto);
+                paymentRepository.save(payment);
+                requestDto.setTransactionId(payment.getTransactionId().toString());
+                FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto, "api");
+                HttpResponse<String> response = sendToBrokerService(fraudCheckRequest);
+                if (response.statusCode() == 200) {
+                    logger.info("Payment submitted for fraud check");
+                } else {
+                    logger.error("Payment failed while submitted for fraud check");
+                    throw new PaymentException("Payment failed while submitted for fraud check", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                }
+            }catch (DataIntegrityViolationException ex){
+                logger.error("Duplicate payment received!");
+                throw new PaymentException("Duplicate payment received!", HttpStatus.CONFLICT.value());
             }
+
             return requestDto.getTransactionId();
         }
 
@@ -72,9 +82,13 @@ public class PaymentService {
             Payment payment = PaymentMapper.convertToEntity(requestDto);
             try {
                 paymentRepository.save(payment);
+                requestDto.setTransactionId(payment.getTransactionId().toString());
                 FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto, "jms");
                 paymentProducer.convertAndSend(fraudCheckRequest, brokerRequestQueue);
                 return requestDto.getTransactionId();
+            }catch (DataIntegrityViolationException ex){
+                logger.error("Duplicate payment received!");
+                throw new PaymentException("Duplicate payment received!", HttpStatus.CONFLICT.value());
             }catch (Exception ex){
                 logger.error("Exception while sending request to broker queue");
                 throw new PaymentException("Payment failed while submitted for fraud check", HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -82,13 +96,13 @@ public class PaymentService {
         }
     }
 
-    public Payment getPaymentStatus(String transactionId) {
+    public Payment getPaymentStatus(UUID transactionId) {
         return paymentRepository.findByTransactionId(transactionId).get();
     }
 
     public Payment updatePaymentStatus(FraudCheckResponse response) {
         logger.info("Updating payment status for transactionId: {}", response.getTransactionId());
-        Optional<Payment> paymentOptional = paymentRepository.findByTransactionId(response.getTransactionId());
+        Optional<Payment> paymentOptional = paymentRepository.findByTransactionId(UUID.fromString(response.getTransactionId()));
         if (paymentOptional.isPresent()) {
             Payment payment = paymentOptional.get();
             payment.setStatus(response.getStatus());

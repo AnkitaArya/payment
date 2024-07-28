@@ -1,13 +1,12 @@
 package com.app.payment.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -16,10 +15,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @EqualsAndHashCode
 @Builder(toBuilder = true)
-@Table(name = "Payment")
+@Table(name = "Payment", uniqueConstraints = {@UniqueConstraint(columnNames = {"payerName", "payerBank", "payeeName", "payeeBank", "amount", "executionDate"})})
 public class Payment {
     @Id
-    private String transactionId;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID transactionId;
     private String payerName;
     private String payerBank;
     private String payerCountryCode;

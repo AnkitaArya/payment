@@ -8,7 +8,6 @@ public class PaymentMapper {
 
     public static Payment convertToEntity(PaymentRequestDTO paymentDto) {
         Payment paymentEntity = new Payment();
-        paymentEntity.setTransactionId(paymentDto.getTransactionId());
         paymentEntity.setPayerName(paymentDto.getPayerName());
         paymentEntity.setPayeeName(paymentDto.getPayeeName());
         paymentEntity.setAmount(Long.valueOf(paymentDto.getAmount()));

@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
@@ -36,7 +38,7 @@ public class PaymentControllerV2 {
     }
 
     @GetMapping(value = "/{paymentId}", produces = "application/json")
-    public ResponseEntity<Payment> fetchPayment(@PathVariable String paymentId) {
+    public ResponseEntity<Payment> fetchPayment(@PathVariable UUID paymentId) {
         logger.info("Request received to fetch status of payment with id : {} ", paymentId);
         Payment result = paymentService.getPaymentStatus(paymentId);
         return new ResponseEntity<>(result, HttpStatus.OK);

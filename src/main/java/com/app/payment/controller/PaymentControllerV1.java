@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -40,7 +41,7 @@ public class PaymentControllerV1 {
     }
 
     @GetMapping(value = "/{paymentId}", produces = "application/json")
-    public ResponseEntity<Payment> fetchPayment(@PathVariable String paymentId) {
+    public ResponseEntity<Payment> fetchPayment(@PathVariable UUID paymentId) {
         logger.info("Request received to fetch status of payment with id : {} ", paymentId);
         Payment result = paymentService.getPaymentStatus(paymentId);
         return new ResponseEntity<>(result, HttpStatus.OK);
