@@ -14,8 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FraudCheckService {
     private static final Logger logger = LoggerFactory.getLogger(FraudCheckService.class);
-    @Value("${jms.queuename.fraudcheck.response}")
-    private String fraudCheckResponseQueueName;
+
 
     private XmlMapper xmlMapper;
     FraudCheckProducer fraudCheckProducer;
@@ -25,12 +24,12 @@ public class FraudCheckService {
         this.fraudCheckProducer = fraudCheckProducer;
     }
 
-    public void performFraudCheckAndSendToPublish(String xmlMessage) throws JsonProcessingException {
+    public void performFraudCheckAndSendToPublish(String xmlMessage, String producerQueuName) throws JsonProcessingException {
         FraudCheckRequest messageData = xmlMapper.readValue(xmlMessage, FraudCheckRequest.class);
         String status = FraudDetector.detectFraud(messageData) ? "FraudCheckRejected" : "FraudCheckApproved";
         FraudCheckResponse response = new FraudCheckResponse();
         response.setStatus(status);
         response.setTransactionId(messageData.getTransactionId());
-        fraudCheckProducer.sendMessage(response, fraudCheckResponseQueueName);
+        fraudCheckProducer.sendMessage(response, producerQueuName);
     }
 }

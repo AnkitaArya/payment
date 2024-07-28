@@ -22,8 +22,15 @@ import java.net.http.HttpResponse;
 @Service
 public class BrokerService {
     private static final Logger logger = LoggerFactory.getLogger(BrokerService.class);
-    @Value("${jms.queuename.fraudcheck.request}")
-    private String fraudCheckRequestQueueName;
+
+    @Value("${jms.queuename.fraudcheck.request.v1}")
+    private String fraudCheckRequestQueueV1;
+
+    @Value("${jms.queuename.fraudcheck.request.v2}")
+    private String fraudCheckRequestQueueV2;
+    @Value("${jms.queuename.broker.response}")
+    private String brokerReponseQueue;
+
     private XmlMapper xmlMapper;
     private HttpClient httpClient;
     private ObjectMapper objectMapper;
@@ -36,15 +43,25 @@ public class BrokerService {
         this.xmlMapper = xmlMapper;
     }
 
-    public void processPayment(PaymentRequestDTO requestDto) {
+
+
+    public void processPayment(PaymentRequestDTO requestDto, String mode) {
         FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto);
-        brokerProducer.convertAndSend(fraudCheckRequest, fraudCheckRequestQueueName);
+        if(mode.equals("api")){
+            brokerProducer.convertAndSendForFraudCheck(fraudCheckRequest, fraudCheckRequestQueueV1);
+        } else
+        brokerProducer.convertAndSendForFraudCheck(fraudCheckRequest, fraudCheckRequestQueueV2);
     }
 
-    public void processFraudCheckResponse(String xmlResponse) {
+    public void processFraudCheckResponse(String xmlResponse, String producerMode) {
         try {
             FraudCheckResponse response = xmlMapper.readValue(xmlResponse, FraudCheckResponse.class);
-            updatePaymentStatus(response);
+            if (producerMode.equals("api")){
+                updatePaymentStatusV1(response);
+            } else {
+                updatePaymentStatusV2(response);
+            }
+
             logger.info("Response received for transaction id: {} ", response.getTransactionId());
         } catch (Exception e) {
             logger.error("Error processing fraud check response: " + e.getMessage());
@@ -52,7 +69,12 @@ public class BrokerService {
         }
     }
 
-    private HttpResponse<String> updatePaymentStatus(FraudCheckResponse fraudCheckResponse) throws IOException, InterruptedException {
+    private void updatePaymentStatusV2(FraudCheckResponse response) {
+        brokerProducer.convertAndSendForPaymentResponse(response, brokerReponseQueue);
+    }
+
+
+    private HttpResponse<String> updatePaymentStatusV1(FraudCheckResponse fraudCheckResponse) throws IOException, InterruptedException {
         String url = "http://localhost:9095/api/v1/payment";
 
         ObjectMapper mapper = new JsonMapper();

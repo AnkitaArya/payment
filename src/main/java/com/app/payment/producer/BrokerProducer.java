@@ -1,6 +1,7 @@
 package com.app.payment.producer;
 
 import com.app.payment.model.FraudCheckRequest;
+import com.app.payment.model.FraudCheckResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -20,12 +21,22 @@ public class BrokerProducer {
         this.xmlMapper = xmlMapper;
     }
 
-    public void convertAndSend(FraudCheckRequest object, String queueName) {
+    public void convertAndSendForFraudCheck(FraudCheckRequest object, String queueName) {
         try {
             xmlMapper.registerModule(new JavaTimeModule());
             String xmlMessage = xmlMapper.writeValueAsString(object);
             jmsTemplate.convertAndSend(queueName, xmlMessage);
             logger.info("published message {} to queue {}", xmlMessage, queueName);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void convertAndSendForPaymentResponse(FraudCheckResponse response, String brokerReponseQueue) {
+        try {
+            String xmlMessage = xmlMapper.writeValueAsString(response);
+            jmsTemplate.convertAndSend(brokerReponseQueue, xmlMessage);
+            logger.info("published message {} to queue {}", xmlMessage, brokerReponseQueue);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

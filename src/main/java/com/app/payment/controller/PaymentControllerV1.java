@@ -17,12 +17,12 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
 @RequestMapping(value = "/api/v1/payment", produces = {APPLICATION_JSON_VALUE})
-public class PaymentController {
-    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+public class PaymentControllerV1 {
+    private static final Logger logger = LoggerFactory.getLogger(PaymentControllerV1.class);
 
     private PaymentService paymentService;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentControllerV1(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
 

@@ -27,7 +27,7 @@ public class BrokerController {
     public ResponseEntity<String> processPayment(@RequestBody PaymentRequestDTO requestDto) {
         logger.info("Request received to process payment with id : {} ", requestDto.getTransactionId());
         try {
-            brokerService.processPayment(requestDto);
+            brokerService.processPayment(requestDto,"api");
             return new ResponseEntity<>("Fraud check request processed successfully", HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Error processing fraud check request: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
