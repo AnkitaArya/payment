@@ -2,6 +2,7 @@ package com.app.payment.consumer;
 
 
 import com.app.payment.service.BrokerService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jms.annotation.JmsListener;
@@ -19,5 +20,10 @@ public class BrokerConsumer {
     public void receiveResponse(String xmlResponse) {
         logger.info("FraudDetectionResponse Received");
         brokerService.processFraudCheckResponse(xmlResponse);
+    }
+    @JmsListener(destination = "BrokerRequestQueue")
+    public void receivePaymentRequest(String xmlResponse) throws JsonProcessingException {
+        logger.info("Payment Request Received");
+        brokerService.processPaymentV2(xmlResponse);
     }
 }

@@ -24,7 +24,7 @@ public class PaymentMapper {
         return paymentEntity;
     }
 
-    public static FraudCheckRequest convertToFraudCheckDto(PaymentRequestDTO incomingDto){
+    public static FraudCheckRequest convertToFraudCheckDto(PaymentRequestDTO incomingDto, String mode){
         FraudCheckRequest fraudCheckRequest = new FraudCheckRequest();
         fraudCheckRequest.setAmount(incomingDto.getAmount());
         fraudCheckRequest.setTransactionId(incomingDto.getTransactionId());
@@ -36,6 +36,7 @@ public class PaymentMapper {
         fraudCheckRequest.setPayerName(incomingDto.getPayerName());
         fraudCheckRequest.setPayerCountryCode(incomingDto.getPayerCountryCode());
         fraudCheckRequest.setPayeeCountryCode(incomingDto.getPayeeCountryCode());
+        fraudCheckRequest.setMode(mode);
         return fraudCheckRequest;
     }
 

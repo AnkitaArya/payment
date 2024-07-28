@@ -11,5 +11,6 @@ public class FraudCheckResponse {
     private String transactionId;
     @NotNull
     private String status;
+    private String mode;
 
 }

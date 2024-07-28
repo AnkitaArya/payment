@@ -24,10 +24,10 @@ public class FraudCheckRequest {
     @NotNull
     private String payeeCountryCode;
     private String paymentInstruction;
-
     @NotNull
     private Long amount;
     @NotNull
     private String currency;
+    private String mode;
 
 }

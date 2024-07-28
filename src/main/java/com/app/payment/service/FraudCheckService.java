@@ -31,6 +31,7 @@ public class FraudCheckService {
         FraudCheckResponse response = new FraudCheckResponse();
         response.setStatus(status);
         response.setTransactionId(messageData.getTransactionId());
+        response.setMode(messageData.getMode());
         fraudCheckProducer.sendMessage(response, fraudCheckResponseQueueName);
     }
 }

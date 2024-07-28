@@ -1,7 +1,7 @@
 package com.app.payment.controller;
 
 
-import com.app.payment.model.PaymentRequestDTO;
+import com.app.payment.model.FraudCheckRequest;
 import com.app.payment.service.BrokerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class BrokerController {
     }
 
     @PostMapping(consumes = "application/json", produces = "application/json")
-    public ResponseEntity<String> processPayment(@RequestBody PaymentRequestDTO requestDto) {
+    public ResponseEntity<String> processPayment(@RequestBody FraudCheckRequest requestDto) {
         logger.info("Request received to process payment with id : {} ", requestDto.getTransactionId());
         try {
             brokerService.processPayment(requestDto);

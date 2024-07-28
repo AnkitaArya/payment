@@ -1,5 +1,7 @@
 package com.app.payment.service;
 
+import com.app.payment.model.FraudCheckRequest;
+import com.app.payment.producer.PaymentProducer;
 import com.app.payment.validate.PaymentValidator;
 import com.app.payment.entity.Payment;
 import com.app.payment.mapper.PaymentMapper;
@@ -9,6 +11,7 @@ import com.app.payment.repository.PaymentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -23,16 +26,21 @@ import java.util.Optional;
 public class PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
+    @Value("${jms.queuename.broker.request}")
+    private String brokerRequestQueue;
+
     private final PaymentValidator paymentValidator;
     private PaymentRepository paymentRepository;
     private HttpClient httpClient;
     private ObjectMapper objectMapper;
+    private PaymentProducer paymentProducer;
 
-    public PaymentService(PaymentValidator paymentValidator, PaymentRepository paymentRepository, HttpClient httpClient, ObjectMapper objectMapper) {
+    public PaymentService(PaymentValidator paymentValidator, PaymentRepository paymentRepository, HttpClient httpClient, ObjectMapper objectMapper, PaymentProducer paymentProducer) {
         this.paymentValidator = paymentValidator;
         this.paymentRepository = paymentRepository;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
+        this.paymentProducer = paymentProducer;
     }
 
     public String processPayment(PaymentRequestDTO requestDto) throws IOException, InterruptedException {
@@ -43,7 +51,8 @@ public class PaymentService {
         } else {
             Payment payment = PaymentMapper.convertToEntity(requestDto);
             paymentRepository.save(payment);
-            HttpResponse<String> response = sendToBrokerService(requestDto);
+            FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto, "api");
+            HttpResponse<String> response = sendToBrokerService(fraudCheckRequest);
             if (response.statusCode() == 200) {
                 logger.info("Payment submitted for fraud check");
             } else {
@@ -53,6 +62,22 @@ public class PaymentService {
             return requestDto.getTransactionId();
         }
 
+    }
+    public String processPaymentV2(PaymentRequestDTO requestDto){
+        if (!validatePayment(requestDto)) {
+            return "Invalid payment details";
+        } else {
+            Payment payment = PaymentMapper.convertToEntity(requestDto);
+            try {
+                paymentRepository.save(payment);
+                FraudCheckRequest fraudCheckRequest = PaymentMapper.convertToFraudCheckDto(requestDto, "jms");
+                paymentProducer.convertAndSend(fraudCheckRequest, brokerRequestQueue);
+                return requestDto.getTransactionId();
+            }catch (Exception ex){
+                logger.error("Exception while sending request to broker queue");
+                return "Payment failed while sending request to broker queue";
+            }
+        }
     }
 
     public Payment getPaymentStatus(String transactionId) {
@@ -89,9 +114,9 @@ public class PaymentService {
 
 
 
-    private HttpResponse<String> sendToBrokerService(PaymentRequestDTO paymentRequestDTO) throws IOException, InterruptedException {
+    private HttpResponse<String> sendToBrokerService(FraudCheckRequest fraudCheckRequest) throws IOException, InterruptedException {
         String url = "http://localhost:9095/api/v1/broker";
-        String requestBody = objectMapper.writeValueAsString(paymentRequestDTO);
+        String requestBody = objectMapper.writeValueAsString(fraudCheckRequest);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
