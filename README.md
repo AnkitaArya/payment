@@ -1,5 +1,7 @@
 ## Payment Processing System
 
+## Author - Ankita Arya
+https://github.com/AnkitaArya/payment
 
 ## Description
 This application consists of 3 different systems -
@@ -42,16 +44,34 @@ JPA, ActiveMQ, etc.
 - **JSON and XML Processing:** The system processes JSON and XML messages for payment requests and fraud detection results.
 - **Error Handling:** The system handles errors and exceptions gracefully to ensure smooth operation.
 
-## Future Scope
+## Future Scope - 
+- **Deployment Startegy** Currently this poc don't have follow any deployment strategy but it can be extended in future. We could use Docker images to deploy on Openshift or any other platform.
+- **Testing Suite:** Testing suite was also beyond the scope of this poc. Junits and integration tests using Mockito would be added into this in future.
+- **Microservice Architecture:** All 3 systems can be seperated out as 3 different microservices, which then could make them independent and remove a lot of coupling.
+  
 
 ## Project Documentation
 - **Swagger Documentation:** This document provides detailed information about the various APIs provided by the Payment Fraud Detection System.
 
 ## Payment Request Properties
+-payee name
+-payer name
+-payee bank
+-payer bank
+-payee currency
+-payer currency
+-payer country
+-payee country
+-amount 
+-execution date
+-creation date
 
 ## Validation
-- **Payment Request ID:** A unique identifier for the payment request.
-- **Payment Amount:** The amount of the payment request.
-- **Payment Currency:** The currency of the payment request.
-- Request Validations: Uses javax.validation.constraints for validating incoming requests.
-  Error Handling: Custom exceptions and error handling mechanisms are in place to manage invalid requests and processing errors.
+- **Transaction ID:** A unique identifier for the payment request.
+- **Payment Country:** The countries for both the parties involved should be ISO alpha 3 country code.
+- **Payment Currency:** The currency of the payment should be ISO 8601 compatible.
+- **Date & Timestamps:** All the dates and timestamps should be ISO 8601 UTC compatible.
+- **Duplicate Payement:** The combination of payer name, payee name, amount, currency and timestamp should not be same.
+
+## Error Handling: 
+- Custom exceptions with proper http status codes and error handling mechanisms are in place to manage invalid requests and processing errors.
